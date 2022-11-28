@@ -13,37 +13,7 @@ import (
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 )
 
-type FormData struct {
-	file      multipart.File
-	cloudName string
-	apiKey    string
-	apiSecret string
-}
-
-type errResponse struct {
-	Error        string   `json:"error"`
-	ErrorMessage error    `json:"errorMessage,omitempty"`
-	Fields       []string `json:"fields,omitempty"`
-}
-
-func Upload(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	file, header, _ := r.FormFile("img")
-
-	if file == nil {
-		err := errResponse{Error: "No image was found in your request."}
-		w.WriteHeader(404)
-		json.NewEncoder(w).Encode(err)
-		return
-	}
-
-	data := FormData{
-		file:      file,
-		cloudName: r.FormValue("cloudName"),
-		apiKey:    r.FormValue("cloudApiKey"),
-		apiSecret: r.FormValue("cloudApiSecret"),
-	}
-
+func handleEmptyFields(data FormData, w http.ResponseWriter) {
 	// Iterate all fields from data struct and append every empty field inside emptyFields var
 	values := reflect.ValueOf(data)
 	var emptyFields []string
@@ -62,17 +32,13 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(err)
 		return
 	}
+}
 
+func uploadImage(file multipart.File, header *multipart.FileHeader, data FormData) (*uploader.UploadResult, error) {
 	ctx := context.Background()
 	filenameWithoutExtension := strings.Split(header.Filename, ".")[0]
 	cld, _ := cloudinary.NewFromParams(data.cloudName, data.apiKey, data.apiSecret)
 	res, err := cld.Upload.Upload(ctx, file, uploader.UploadParams{PublicID: filenameWithoutExtension})
 
-	if err != nil {
-		w.WriteHeader(404)
-		json.NewEncoder(w).Encode(errResponse{Error: "An error ocurred while trying to upload your image.", ErrorMessage: err})
-	}
-
-	w.WriteHeader(200)
-	json.NewEncoder(w).Encode(res)
+	return res, err
 }
