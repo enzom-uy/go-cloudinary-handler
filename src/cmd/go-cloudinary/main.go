@@ -11,6 +11,7 @@ import (
 func main() {
 	Router := chi.NewRouter()
 	Router.Use(middleware.Logger)
+	Router.Use(middleware.Recoverer)
 	Router.Post("/", upload.Upload)
 	http.ListenAndServe(":2707", Router)
 }
