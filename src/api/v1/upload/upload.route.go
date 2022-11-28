@@ -29,6 +29,7 @@ type errResponse struct {
 func Upload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	file, header, _ := r.FormFile("img")
+
 	if file == nil {
 		err := errResponse{Error: "No image was found in your request."}
 		w.WriteHeader(404)
@@ -66,7 +67,11 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	filenameWithoutExtension := strings.Split(header.Filename, ".")[0]
 	cld, _ := cloudinary.NewFromParams(data.cloudName, data.apiKey, data.apiSecret)
 	res, err := cld.Upload.Upload(ctx, file, uploader.UploadParams{PublicID: filenameWithoutExtension})
-	fmt.Println(err)
+
+	if err != nil {
+		w.WriteHeader(404)
+		json.NewEncoder(w).Encode(errResponse{Error: "An error ocurred while trying to upload your image.", ErrorMessage: err})
+	}
 
 	w.WriteHeader(200)
 	json.NewEncoder(w).Encode(res)
