@@ -2,8 +2,6 @@ package upload
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"mime/multipart"
 	"net/http"
 	"reflect"
@@ -13,7 +11,7 @@ import (
 	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 )
 
-func handleEmptyFields(data FormData, w http.ResponseWriter) {
+func handleEmptyFields(data FormData, w http.ResponseWriter) []string {
 	// Iterate all fields from data struct and append every empty field inside emptyFields var
 	values := reflect.ValueOf(data)
 	var emptyFields []string
@@ -23,15 +21,8 @@ func handleEmptyFields(data FormData, w http.ResponseWriter) {
 		if values.Field(i).String() == "" {
 			emptyFields = append(emptyFields, types.Field(i).Name)
 		}
-		fmt.Println(values.Field(i).String())
 	}
-
-	if len(emptyFields) > 0 {
-		err := errResponse{Error: "There is one or more fields that are empty:", Fields: emptyFields}
-		w.WriteHeader(404)
-		json.NewEncoder(w).Encode(err)
-		return
-	}
+	return emptyFields
 }
 
 func uploadImage(file multipart.File, header *multipart.FileHeader, data FormData) (*uploader.UploadResult, error) {

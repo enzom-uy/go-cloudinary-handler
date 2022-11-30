@@ -2,6 +2,8 @@ package upload
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 )
@@ -36,7 +38,16 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 		apiKey:    r.FormValue("cloudApiKey"),
 		apiSecret: r.FormValue("cloudApiSecret"),
 	}
-	handleEmptyFields(data, w)
+	resBody, _ := ioutil.ReadAll(r.Body)
+	fmt.Println(resBody)
+	emptyFields := handleEmptyFields(data, w)
+
+	if len(emptyFields) > 0 {
+		err := errResponse{Error: "There is one or more fields that are empty:", Fields: emptyFields}
+		w.WriteHeader(404)
+		json.NewEncoder(w).Encode(err)
+		return
+	}
 
 	res, err := uploadImage(file, header, data)
 
